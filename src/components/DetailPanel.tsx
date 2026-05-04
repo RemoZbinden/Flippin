@@ -115,7 +115,7 @@ export function DetailPanel({ card, onClose, onToggleSale, onUpdate, onDelete }:
             <div style={{ flex: 1 }}>
               <div style={{ fontSize: 12.5, fontWeight: 700, color: '#12391F' }}>Verification empfohlen</div>
               <div style={{ fontSize: 11.5, color: '#2A5B3E', marginTop: 2, lineHeight: 1.45 }}>
-                Bei Karten über CHF 100 schafft eine Echtheitsprüfung Vertrauen. FlippIt prüft physisch — ab CHF 10.
+                Bei Karten über CHF 100 schafft eine Echtheitsprüfung Vertrauen. Flippin prüft physisch — ab CHF 10.
               </div>
               <button style={{ marginTop: 8, padding: '6px 12px', border: 'none', borderRadius: 999, background: '#2E9E67', color: '#fff', fontSize: 11.5, fontWeight: 600, cursor: 'pointer' }}>
                 Verification anfragen →

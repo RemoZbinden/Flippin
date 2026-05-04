@@ -19,7 +19,7 @@ export function TopNav({ onOpenShare, search, onSearch }: TopNavProps) {
     }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
         <Logo size={30}/>
-        <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 22, letterSpacing: -0.5 }}>FlippIt</span>
+        <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 22, letterSpacing: -0.5 }}>Flippin</span>
         <span style={{
           marginLeft: 8, padding: '2px 8px', fontSize: 10, fontWeight: 600,
           fontFamily: 'var(--font-mono)', background: 'var(--ink)', color: 'var(--cream)',

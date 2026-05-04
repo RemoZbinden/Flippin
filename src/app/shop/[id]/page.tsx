@@ -36,7 +36,7 @@ export default function CardDetailPage({ params }: { params: Promise<{ id: strin
       }}>
         <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none' }}>
           <Logo size={28} />
-          <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 20, letterSpacing: -0.5, color: 'var(--ink)' }}>FlippIt</span>
+          <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 20, letterSpacing: -0.5, color: 'var(--ink)' }}>Flippin</span>
         </Link>
         <div style={{ flex: 1 }} />
         <Link href="/shop" style={{ color: 'var(--ink-3)', textDecoration: 'none', fontSize: 14, fontWeight: 500 }}>← Zurück zum Shop</Link>

@@ -50,7 +50,7 @@ CSS-Variablen in `globals.css`:
 
 ## Befehle
 ```bash
-cd "FLIPPIT Website/flippit"
+cd "FLIPPIN Website/flippin"
 npm run dev    # http://localhost:3000
 npm run build
 ```

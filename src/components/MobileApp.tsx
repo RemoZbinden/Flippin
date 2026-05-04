@@ -52,7 +52,7 @@ export function MobileApp({
       <div style={{ padding: '16px 20px 12px', background: 'linear-gradient(180deg, #DCE7FA, var(--cream))', position: 'relative' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 18 }}>
           <Logo size={28}/>
-          <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 20, letterSpacing: -0.4, flex: 1 }}>FlippIt</div>
+          <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 20, letterSpacing: -0.4, flex: 1 }}>Flippin</div>
           <Avatar size={30} name="L"/>
         </div>
         <div style={{ fontSize: 13, color: 'var(--ink-3)', fontWeight: 500 }}>Deine Sammlung</div>
@@ -81,7 +81,7 @@ export function MobileApp({
             <Icon name="share" size={15}/>
           </div>
           <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 12, fontWeight: 700 }}>flippit.app/c/dein-link</div>
+            <div style={{ fontSize: 12, fontWeight: 700 }}>flippin.app/c/dein-link</div>
             <div style={{ fontSize: 10.5, color: 'var(--ink-4)' }}>{forSale.length} Karten sichtbar</div>
           </div>
           <button onClick={onOpenShare} style={{ padding: '6px 10px', border: 'none', borderRadius: 999, background: 'var(--coral-wash)', color: 'var(--coral-ink)', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>Teilen</button>

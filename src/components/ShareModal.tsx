@@ -20,7 +20,7 @@ export function ShareModal({ open, onClose, cards }: ShareModalProps) {
   if (!open) return null;
 
   const copy = () => {
-    navigator.clipboard?.writeText(`flippit.app/c/${linkToken}`).catch(() => {});
+    navigator.clipboard?.writeText(`flippin.app/c/${linkToken}`).catch(() => {});
     setCopied(true);
     setTimeout(() => setCopied(false), 1600);
   };
@@ -49,7 +49,7 @@ export function ShareModal({ open, onClose, cards }: ShareModalProps) {
 
         <div style={{ padding: '20px 26px 26px', display: 'flex', flexDirection: 'column', gap: 14 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', background: '#fff', border: '2px solid var(--line-2)', borderRadius: 12 }}>
-            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 13, color: 'var(--ink-4)' }}>flippit.app/c/</span>
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 13, color: 'var(--ink-4)' }}>flippin.app/c/</span>
             <span style={{ fontFamily: 'var(--font-mono)', fontSize: 13, fontWeight: 700, color: 'var(--ink)' }}>{linkToken}</span>
             <div style={{ flex: 1 }}/>
             <button onClick={copy} style={{
