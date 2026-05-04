@@ -64,7 +64,7 @@ function Nav() {
           <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
           {count > 0 && <span style={{ position: 'absolute', top: 4, right: 4, width: 16, height: 16, background: 'var(--accent)', borderRadius: '50%', fontSize: 9, fontWeight: 700, color: '#fff', display: 'grid', placeItems: 'center' }}>{count}</span>}
         </Link>
-        <BtnPrimary href="/dashboard">Anmelden</BtnPrimary>
+        <BtnPrimary href="/login">Anmelden</BtnPrimary>
       </div>
     </nav>
   );
