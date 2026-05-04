@@ -1,118 +1,109 @@
--- FlippIt Webshop · Initiales Datenbankschema
+-- Flippin Webshop · Datenbankschema
 
--- Erweiterungen
 create extension if not exists "uuid-ossp";
 
--- Karten-Tabelle
+-- ─── Karten ───
 create table if not exists cards (
-  id          uuid primary key default uuid_generate_v4(),
-  name        text not null,
-  element     text not null check (element in ('feuer','wasser','pflanze','blitz','psycho','finster','metall','drache')),
-  hp          integer not null,
-  set_name    text not null,
-  set_number  text not null,
-  rarity      text not null check (rarity in ('common','rare','holo')),
-  year        integer not null,
-  foil        boolean not null default false,
-  condition   text not null check (condition in ('Mint','Near Mint','Excellent','Good','Played')),
-  price       numeric(10,2) not null,
-  for_sale    boolean not null default false,
-  attack      text,
-  dmg         text,
-  collection  text,
-  image_url       text,
-  back_image_url  text,
-  language        text not null default 'Deutsch',
-  description     text,
-  category        text not null default 'Pokémon',
-  sold        boolean not null default false,
-  sold_price  numeric(10,2),
-  sold_date   date,
-  created_at  timestamptz not null default now(),
-  updated_at  timestamptz not null default now()
+  id             uuid primary key default uuid_generate_v4(),
+  name           text not null,
+  category       text not null default 'Pokémon',
+  set_name       text not null default '',
+  set_number     text not null default '',
+  rarity         text not null default 'rare',
+  condition      text not null default 'Near Mint',
+  language       text not null default 'Deutsch',
+  year           integer not null default 2024,
+  price          numeric(10,2) not null,
+  for_sale       boolean not null default true,
+  foil           boolean not null default false,
+  description    text,
+  image_url      text,
+  back_image_url text,
+  -- Legacy-Felder (Dashboard-Kompatibilität)
+  element        text not null default 'feuer',
+  hp             integer not null default 100,
+  attack         text default '',
+  dmg            text default '',
+  collection     text default '',
+  sold           boolean not null default false,
+  sold_price     numeric(10,2),
+  sold_date      date,
+  created_at     timestamptz not null default now(),
+  updated_at     timestamptz not null default now()
 );
 
--- Benutzerprofile (erweitert Supabase Auth)
+-- ─── Profile ───
 create table if not exists profiles (
-  id          uuid primary key references auth.users on delete cascade,
+  id           uuid primary key references auth.users on delete cascade,
   display_name text,
-  avatar_url  text,
-  created_at  timestamptz not null default now()
+  avatar_url   text,
+  created_at   timestamptz not null default now()
 );
 
--- Bestellungen
+-- ─── Bestellungen ───
 create table if not exists orders (
-  id                      uuid primary key default uuid_generate_v4(),
-  user_id                 uuid references profiles(id),
-  status                  text not null default 'pending'
-                            check (status in ('pending','paid','shipped','delivered','cancelled')),
-  total                   numeric(10,2) not null,
-  shipping_name           text not null,
-  shipping_email          text not null,
-  shipping_street         text not null,
-  shipping_city           text not null,
-  shipping_zip            text not null,
-  shipping_country        text not null default 'CH',
-  stripe_payment_intent   text,
-  created_at              timestamptz not null default now(),
-  updated_at              timestamptz not null default now()
+  id                    uuid primary key default uuid_generate_v4(),
+  user_id               uuid references profiles(id),
+  status                text not null default 'pending',
+  total                 numeric(10,2) not null,
+  shipping_name         text not null,
+  shipping_email        text not null,
+  shipping_street       text not null,
+  shipping_city         text not null,
+  shipping_zip          text not null,
+  shipping_country      text not null default 'CH',
+  stripe_payment_intent text,
+  created_at            timestamptz not null default now(),
+  updated_at            timestamptz not null default now()
 );
 
--- Bestellpositionen
+-- ─── Bestellpositionen ───
 create table if not exists order_items (
-  id          uuid primary key default uuid_generate_v4(),
-  order_id    uuid not null references orders(id) on delete cascade,
-  card_id     uuid not null references cards(id),
-  card_name   text not null,
-  price       numeric(10,2) not null,
-  quantity    integer not null default 1
+  id        uuid primary key default uuid_generate_v4(),
+  order_id  uuid not null references orders(id) on delete cascade,
+  card_id   uuid references cards(id),
+  card_name text not null,
+  price     numeric(10,2) not null,
+  quantity  integer not null default 1
 );
 
--- Row-Level-Security
-alter table cards      enable row level security;
-alter table profiles   enable row level security;
-alter table orders     enable row level security;
+-- ─── Row Level Security ───
+alter table cards       enable row level security;
+alter table profiles    enable row level security;
+alter table orders      enable row level security;
 alter table order_items enable row level security;
 
--- Karten: öffentlich lesbar, nur Admins schreiben
-create policy "Karten öffentlich lesen" on cards for select using (true);
-create policy "Admins können Karten bearbeiten" on cards for all
-  using (auth.role() = 'authenticated');
+-- Karten: jeder kann lesen
+create policy "Karten lesen" on cards for select using (true);
+-- Karten: eingeloggte User können schreiben (Admin)
+create policy "Karten einfügen" on cards for insert with check (auth.role() = 'authenticated');
+create policy "Karten bearbeiten" on cards for update using (auth.role() = 'authenticated');
+create policy "Karten löschen" on cards for delete using (auth.role() = 'authenticated');
 
--- Profile: eigenes Profil lesen/bearbeiten
-create policy "Eigenes Profil lesen" on profiles for select
-  using (auth.uid() = id);
-create policy "Eigenes Profil bearbeiten" on profiles for update
-  using (auth.uid() = id);
+-- Profile
+create policy "Eigenes Profil lesen" on profiles for select using (auth.uid() = id);
+create policy "Eigenes Profil bearbeiten" on profiles for update using (auth.uid() = id);
+create policy "Profil erstellen" on profiles for insert with check (auth.uid() = id);
 
--- Bestellungen: eigene Bestellungen lesen
-create policy "Eigene Bestellungen lesen" on orders for select
-  using (auth.uid() = user_id);
-create policy "Neue Bestellung anlegen" on orders for insert
-  with check (auth.uid() = user_id or user_id is null);
+-- Bestellungen
+create policy "Eigene Bestellungen lesen" on orders for select using (auth.uid() = user_id);
+create policy "Bestellung anlegen" on orders for insert with check (true);
 
--- Bestellpositionen: über Bestellung verknüpft
-create policy "Eigene Bestellpositionen lesen" on order_items for select
-  using (
-    exists (
-      select 1 from orders o
-      where o.id = order_items.order_id and o.user_id = auth.uid()
-    )
-  );
+-- Bestellpositionen
+create policy "Eigene Positionen lesen" on order_items for select
+  using (exists (select 1 from orders o where o.id = order_items.order_id and o.user_id = auth.uid()));
+create policy "Position anlegen" on order_items for insert with check (true);
 
--- Trigger: updated_at automatisch setzen
+-- ─── Auto updated_at ───
 create or replace function set_updated_at()
 returns trigger language plpgsql as $$
-begin
-  new.updated_at = now();
-  return new;
-end;
+begin new.updated_at = now(); return new; end;
 $$;
 
-create trigger cards_updated_at   before update on cards   for each row execute function set_updated_at();
-create trigger orders_updated_at  before update on orders  for each row execute function set_updated_at();
+create trigger cards_updated_at  before update on cards  for each row execute function set_updated_at();
+create trigger orders_updated_at before update on orders for each row execute function set_updated_at();
 
--- Profil automatisch bei Registrierung erstellen
+-- ─── Auto-Profil bei Registrierung ───
 create or replace function handle_new_user()
 returns trigger language plpgsql security definer set search_path = public as $$
 begin
@@ -125,3 +116,17 @@ $$;
 create trigger on_auth_user_created
   after insert on auth.users
   for each row execute function handle_new_user();
+
+-- ─── Storage: Karten-Bilder ───
+insert into storage.buckets (id, name, public)
+values ('cards', 'cards', true)
+on conflict (id) do nothing;
+
+create policy "Bilder öffentlich lesen" on storage.objects
+  for select using (bucket_id = 'cards');
+
+create policy "Bilder hochladen" on storage.objects
+  for insert with check (bucket_id = 'cards' and auth.role() = 'authenticated');
+
+create policy "Bilder löschen" on storage.objects
+  for delete using (bucket_id = 'cards' and auth.role() = 'authenticated');
