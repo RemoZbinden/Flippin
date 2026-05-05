@@ -5,149 +5,113 @@ import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import { SEED_CARDS, formatCHF } from '@/types';
 
-function Logo() {
-  return (
-    <Link href="/" style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 20, letterSpacing: -0.5, color: 'var(--black)', textDecoration: 'none' }}>
-      flip<span style={{ color: 'var(--accent)' }}>pin</span>
-      <span style={{ marginLeft: 8, fontSize: 10, fontWeight: 600, letterSpacing: '0.1em', color: 'var(--gray)', textTransform: 'uppercase' }}>Admin</span>
-    </Link>
-  );
-}
+type Order = { id: string; status: string; total: number; shipping_name: string; created_at: string };
 
-const COND_COLOR: Record<string, string> = {
-  Mint: '#2E9E67', 'Near Mint': '#5AB27F', Excellent: '#B29E3C', Good: '#C4813C', Played: '#B34A4A',
-};
-
-export default function AdminPage() {
+export default function AdminDashboard() {
   const [cards, setCards] = useState(SEED_CARDS);
-  const [deleting, setDeleting] = useState<string | null>(null);
-  const [search, setSearch] = useState('');
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const filtered = cards.filter(c =>
-    c.name.toLowerCase().includes(search.toLowerCase()) ||
-    c.set.toLowerCase().includes(search.toLowerCase())
-  );
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const supabase = createClient();
+        const [{ data: cardData }, { data: orderData }] = await Promise.all([
+          supabase.from('cards').select('*'),
+          supabase.from('orders').select('*').order('created_at', { ascending: false }).limit(5),
+        ]);
+        if (cardData?.length) setCards(cardData as typeof SEED_CARDS);
+        if (orderData) setOrders(orderData);
+      } catch {}
+      setLoading(false);
+    };
+    load();
+  }, []);
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Karte wirklich löschen?')) return;
-    setDeleting(id);
-    try {
-      const supabase = createClient();
-      await supabase.from('cards').delete().eq('id', id);
-    } catch {}
-    setCards(cs => cs.filter(c => c.id !== id));
-    setDeleting(null);
-  };
+  const cardsInShop = cards.filter(c => c.forSale).length;
+  const shopValue = cards.filter(c => c.forSale).reduce((s, c) => s + c.price, 0);
+  const soldOrders = orders.filter(o => o.status === 'paid' || o.status === 'shipped' || o.status === 'delivered');
+  const revenue = soldOrders.reduce((s, o) => s + o.total, 0);
 
-  const toggleSale = async (id: string) => {
-    setCards(cs => cs.map(c => c.id === id ? { ...c, forSale: !c.forSale } : c));
-    try {
-      const supabase = createClient();
-      const card = cards.find(c => c.id === id);
-      await supabase.from('cards').update({ for_sale: !card?.forSale }).eq('id', id);
-    } catch {}
-  };
+  const stats = [
+    { label: 'Karten im Shop', value: cardsInShop, sub: `${cards.length} total`, href: '/admin/cards' },
+    { label: 'Shopwert', value: formatCHF(shopValue), sub: 'aktive Listings', href: '/admin/cards' },
+    { label: 'Bestellungen', value: orders.length, sub: `${soldOrders.length} bezahlt`, href: '/admin/orders' },
+    { label: 'Umsatz', value: formatCHF(revenue), sub: 'bezahlte Bestellungen', href: '/admin/orders' },
+  ];
 
-  const forSaleCount = cards.filter(c => c.forSale).length;
-  const totalValue = cards.filter(c => c.forSale).reduce((s, c) => s + c.price, 0);
+  const STATUS_LABEL: Record<string, string> = { pending: 'Ausstehend', paid: 'Bezahlt', shipped: 'Versendet', delivered: 'Geliefert', cancelled: 'Storniert' };
+  const STATUS_COLOR: Record<string, string> = { pending: '#B29E3C', paid: '#2E9E67', shipped: '#3D8BE8', delivered: '#4FB079', cancelled: '#B34A4A' };
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--white)', fontFamily: 'var(--font-body)' }}>
-      {/* Nav */}
-      <nav style={{ height: 64, borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 40px', position: 'sticky', top: 0, background: 'var(--white)', zIndex: 50 }}>
-        <Logo />
-        <div style={{ display: 'flex', gap: 12 }}>
-          <Link href="/" style={{ padding: '8px 16px', border: '1px solid var(--border)', borderRadius: 2, fontSize: 12, textDecoration: 'none', color: 'var(--gray)', letterSpacing: '0.04em', textTransform: 'uppercase', fontWeight: 500 }}>← Shop</Link>
-          <Link href="/admin/add" style={{ padding: '8px 20px', background: 'var(--black)', color: 'var(--white)', borderRadius: 2, fontSize: 12, textDecoration: 'none', letterSpacing: '0.06em', textTransform: 'uppercase', fontWeight: 600 }}>+ Karte hinzufügen</Link>
-        </div>
-      </nav>
+    <div style={{ padding: 40 }}>
+      <div style={{ marginBottom: 32 }}>
+        <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 24, fontWeight: 800, letterSpacing: -0.5, margin: '0 0 4px' }}>Übersicht</h1>
+        <p style={{ fontSize: 13, color: 'var(--gray)', margin: 0 }}>Willkommen in der Admin-Konsole.</p>
+      </div>
 
-      <div style={{ maxWidth: 1200, margin: '0 auto', padding: '40px' }}>
-        {/* Stats */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 1, background: 'var(--border)', border: '1px solid var(--border)', marginBottom: 32 }}>
-          {[
-            { label: 'Karten gesamt', value: String(cards.length) },
-            { label: 'Im Verkauf', value: String(forSaleCount) },
-            { label: 'Gesamtwert Shop', value: formatCHF(totalValue) },
-          ].map((s, i) => (
-            <div key={i} style={{ background: 'var(--white)', padding: '24px 28px' }}>
-              <div style={{ fontSize: 11, color: 'var(--gray)', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 8 }}>{s.label}</div>
-              <div style={{ fontFamily: 'var(--font-display)', fontSize: 28, fontWeight: 800, letterSpacing: -0.5 }}>{s.value}</div>
-            </div>
-          ))}
-        </div>
+      {/* Stats */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 32 }}>
+        {stats.map(stat => (
+          <Link key={stat.label} href={stat.href} style={{ textDecoration: 'none', border: '1px solid var(--border)', padding: '20px 24px', background: 'white', display: 'block' }}>
+            <div style={{ fontSize: 11, color: 'var(--gray)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8, fontWeight: 600 }}>{stat.label}</div>
+            <div style={{ fontFamily: 'var(--font-display)', fontSize: 28, fontWeight: 800, letterSpacing: -0.5, marginBottom: 4 }}>{loading ? '–' : stat.value}</div>
+            <div style={{ fontSize: 11, color: 'var(--gray)' }}>{stat.sub}</div>
+          </Link>
+        ))}
+      </div>
 
-        {/* Header + search */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 20 }}>
-          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 700, margin: 0 }}>Alle Karten</h1>
-          <div style={{ flex: 1 }} />
-          <input
-            value={search} onChange={e => setSearch(e.target.value)}
-            placeholder="Suchen…"
-            style={{ padding: '8px 14px', border: '1px solid var(--border)', borderRadius: 2, fontSize: 13, outline: 'none', width: 220, fontFamily: 'var(--font-body)' }}
-          />
-        </div>
-
-        {/* Table */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 300px', gap: 20 }}>
+        {/* Recent orders */}
         <div style={{ border: '1px solid var(--border)' }}>
-          {/* Header row */}
-          <div style={{ display: 'grid', gridTemplateColumns: '80px 1fr 120px 100px 100px 110px 120px', background: 'var(--cream)', borderBottom: '1px solid var(--border)', padding: '10px 16px', fontSize: 11, fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--gray)' }}>
-            <span>Bild</span><span>Karte</span><span>Set</span><span>Zustand</span><span>Preis</span><span>Im Shop</span><span>Aktionen</span>
+          <div style={{ padding: '14px 20px', borderBottom: '1px solid var(--border)', background: 'var(--cream)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 14 }}>Letzte Bestellungen</span>
+            <Link href="/admin/orders" style={{ fontSize: 11, color: 'var(--gray)', textDecoration: 'none' }}>Alle ansehen →</Link>
           </div>
-
-          {filtered.length === 0 && (
-            <div style={{ padding: '40px', textAlign: 'center', color: 'var(--gray)', fontSize: 14 }}>Keine Karten gefunden.</div>
+          {loading && <div style={{ padding: 32, textAlign: 'center', color: 'var(--gray)', fontSize: 13 }}>Lädt…</div>}
+          {!loading && orders.length === 0 && (
+            <div style={{ padding: '48px 32px', textAlign: 'center', color: 'var(--gray)' }}>
+              <div style={{ fontSize: 32, marginBottom: 12 }}>📦</div>
+              <div style={{ fontSize: 14 }}>Noch keine Bestellungen.</div>
+            </div>
           )}
-
-          {filtered.map((card, i) => (
-            <div key={card.id} style={{ display: 'grid', gridTemplateColumns: '80px 1fr 120px 100px 100px 110px 120px', alignItems: 'center', padding: '12px 16px', borderBottom: i < filtered.length - 1 ? '1px solid var(--border)' : undefined, background: 'var(--white)', transition: 'background 0.15s' }}
-              onMouseEnter={e => (e.currentTarget.style.background = 'var(--cream)')}
-              onMouseLeave={e => (e.currentTarget.style.background = 'var(--white)')}
-            >
-              {/* Image placeholder */}
-              <div style={{ width: 52, height: 36, borderRadius: 2, background: 'var(--cream)', border: '1px solid var(--border)', display: 'grid', placeItems: 'center', fontSize: 18, overflow: 'hidden' }}>
-                {card.imageUrl ? <img src={card.imageUrl} alt={card.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : '🃏'}
-              </div>
-
-              {/* Name + rarity */}
+          {orders.map((order, i) => (
+            <div key={order.id} style={{ display: 'grid', gridTemplateColumns: '1fr 120px 100px', alignItems: 'center', padding: '14px 20px', borderBottom: i < orders.length - 1 ? '1px solid var(--border)' : undefined }}>
               <div>
-                <div style={{ fontSize: 14, fontWeight: 500, marginBottom: 2 }}>{card.name}</div>
-                <div style={{ display: 'flex', gap: 6 }}>
-                  <span style={{ fontSize: 10, padding: '1px 6px', borderRadius: 2, background: card.rarity === 'holo' ? 'var(--accent)' : card.rarity === 'rare' ? 'var(--black)' : 'var(--cream)', color: card.rarity === 'holo' || card.rarity === 'rare' ? 'white' : 'var(--gray)', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase' }}>{card.rarity}</span>
-                  {card.foil && <span style={{ fontSize: 10, padding: '1px 6px', borderRadius: 2, background: 'linear-gradient(90deg, #ffd86e, #ff6ec7)', color: 'white', fontWeight: 600 }}>FOIL</span>}
-                </div>
+                <div style={{ fontSize: 13, fontWeight: 500 }}>{order.shipping_name}</div>
+                <div style={{ fontSize: 11, color: 'var(--gray)', marginTop: 2 }}>{new Date(order.created_at).toLocaleDateString('de-CH')}</div>
               </div>
-
-              {/* Set */}
-              <div style={{ fontSize: 12, color: 'var(--gray)' }}>{card.set}<br /><span style={{ fontSize: 11 }}>{card.setNumber}</span></div>
-
-              {/* Condition */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <span style={{ width: 7, height: 7, borderRadius: '50%', background: COND_COLOR[card.condition], flexShrink: 0, display: 'inline-block' }} />
-                <span style={{ fontSize: 12 }}>{card.condition}</span>
-              </div>
-
-              {/* Price */}
-              <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 15 }}>{formatCHF(card.price)}</div>
-
-              {/* Toggle sale */}
-              <button onClick={() => toggleSale(card.id)} style={{
-                padding: '5px 12px', borderRadius: 2, border: 'none', cursor: 'pointer', fontSize: 11, fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase',
-                background: card.forSale ? '#e8f5e9' : 'var(--cream)',
-                color: card.forSale ? '#2E9E67' : 'var(--gray)',
-              }}>
-                {card.forSale ? '✓ Im Shop' : 'Versteckt'}
-              </button>
-
-              {/* Actions */}
-              <div style={{ display: 'flex', gap: 6 }}>
-                <Link href={`/admin/add?edit=${card.id}`} style={{ padding: '5px 10px', border: '1px solid var(--border)', borderRadius: 2, fontSize: 11, color: 'var(--gray)', textDecoration: 'none', fontWeight: 500 }}>Bearbeiten</Link>
-                <button onClick={() => handleDelete(card.id)} disabled={deleting === card.id} style={{ padding: '5px 10px', border: '1px solid #fcc', borderRadius: 2, fontSize: 11, color: '#c0392b', background: 'transparent', cursor: 'pointer', fontWeight: 500 }}>
-                  {deleting === card.id ? '…' : 'Löschen'}
-                </button>
-              </div>
+              <span style={{ display: 'inline-block', fontSize: 10, padding: '3px 8px', borderRadius: 2, background: (STATUS_COLOR[order.status] ?? '#ccc') + '22', color: STATUS_COLOR[order.status] ?? '#ccc', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                {STATUS_LABEL[order.status] ?? order.status}
+              </span>
+              <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 14, textAlign: 'right' }}>{formatCHF(order.total)}</div>
             </div>
           ))}
+        </div>
+
+        {/* Quick links */}
+        <div style={{ border: '1px solid var(--border)', height: 'fit-content' }}>
+          <div style={{ padding: '14px 20px', borderBottom: '1px solid var(--border)', background: 'var(--cream)' }}>
+            <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 14 }}>Schnellzugriff</span>
+          </div>
+          <div style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {[
+              { href: '/admin/add', label: '+ Neue Karte hinzufügen' },
+              { href: '/admin/cards', label: '→ Karten verwalten' },
+              { href: '/admin/orders', label: '→ Bestellungen' },
+              { href: '/admin/settings', label: '→ Einstellungen' },
+              { href: '/shop', label: '↗ Shop ansehen', external: true },
+            ].map(link => (
+              <Link key={link.href} href={link.href} target={link.external ? '_blank' : undefined} style={{
+                display: 'block', padding: '10px 14px', border: '1px solid var(--border)',
+                borderRadius: 2, fontSize: 12, color: 'var(--black)', textDecoration: 'none',
+                fontWeight: 500, transition: 'background 0.15s',
+              }}
+                onMouseEnter={e => (e.currentTarget.style.background = 'var(--cream)')}
+                onMouseLeave={e => (e.currentTarget.style.background = 'white')}
+              >{link.label}</Link>
+            ))}
+          </div>
         </div>
       </div>
     </div>
