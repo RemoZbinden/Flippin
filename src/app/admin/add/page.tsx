@@ -200,19 +200,31 @@ export default function AddCardPage() {
                 <div
                   onClick={() => backRef.current?.click()}
                   style={{
-                    border: '2px dashed var(--border)', borderRadius: 4, cursor: 'pointer',
-                    background: 'var(--cream)', height: 120, display: 'flex', alignItems: 'center',
-                    justifyContent: 'center', overflow: 'hidden', transition: 'border-color 0.2s',
+                    border: `2px dashed var(--border)`, borderRadius: 4, cursor: 'pointer',
+                    background: 'var(--cream)', aspectRatio: '3/4', display: 'flex', alignItems: 'center',
+                    justifyContent: 'center', overflow: 'hidden', transition: 'border-color 0.2s', position: 'relative',
                   }}
                   onMouseEnter={e => (e.currentTarget.style.borderColor = 'var(--accent)')}
                   onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--border)')}
                 >
                   {backPreview ? (
-                    <img src={backPreview} alt="Rückseite" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                    <>
+                      <img src={backPreview} alt="Rückseite" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                      <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0)', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'background 0.2s' }}
+                        onMouseEnter={e => (e.currentTarget.style.background = 'rgba(0,0,0,0.4)')}
+                        onMouseLeave={e => (e.currentTarget.style.background = 'rgba(0,0,0,0)')}
+                      >
+                        <span style={{ color: 'white', fontSize: 12, fontWeight: 600, opacity: 0, transition: 'opacity 0.2s' }}
+                          onMouseEnter={e => (e.currentTarget.style.opacity = '1')}
+                          onMouseLeave={e => (e.currentTarget.style.opacity = '0')}
+                        >Bild ändern</span>
+                      </div>
+                    </>
                   ) : (
-                    <div style={{ textAlign: 'center' }}>
-                      <div style={{ fontSize: 22, opacity: 0.4 }}>🔄</div>
-                      <div style={{ fontSize: 12, color: 'var(--gray)', marginTop: 4 }}>Rückseite hochladen</div>
+                    <div style={{ textAlign: 'center', padding: 32 }}>
+                      <div style={{ fontSize: 36, marginBottom: 12, opacity: 0.4 }}>🔄</div>
+                      <div style={{ fontSize: 14, fontWeight: 500, marginBottom: 6 }}>Rückseite hochladen</div>
+                      <div style={{ fontSize: 12, color: 'var(--gray)' }}>Drag &amp; Drop oder klicken<br />JPG, PNG, HEIC · optional</div>
                     </div>
                   )}
                   <input ref={backRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={e => e.target.files?.[0] && handleImage(e.target.files[0], 'back')} />
